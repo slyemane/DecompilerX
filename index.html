@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DecompilerX - Professional x86-64 Decompiler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.02) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 2px, transparent 2px);
+            background-size: 60px 60px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .grid-background::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        nav {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 18px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        nav:hover {
+            background: rgba(25, 25, 25, 0.9);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 0%, #888888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 35px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #d0d0d0;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 15px;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #ffffff;
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #ffffff;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 200px 20px 100px;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.5; }
+            50% { transform: translateX(-50%) scale(1.1); opacity: 0.8; }
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            font-size: 14px;
+            color: #b0b0b0;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: 80px;
+            margin-bottom: 25px;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #ffffff 0%, #666666 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            letter-spacing: -2px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero p {
+            font-size: 22px;
+            color: #999999;
+            margin-bottom: 50px;
+            line-height: 1.7;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1.2s ease-out 0.6s both;
+        }
+
+        .btn {
+            padding: 18px 45px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-primary {
+            background: #ffffff;
+            color: #0a0a0a;
+            box-shadow: 0 8px 32px rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-primary:hover {
+            background: #f0f0f0;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 48px rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #ffffff;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-3px);
+        }
+
+        .features {
+            padding: 120px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-label {
+            font-size: 14px;
+            color: #888888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .features h2 {
+            font-size: 56px;
+            margin-bottom: 20px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 45px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            font-size: 52px;
+            margin-bottom: 25px;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .feature-card:nth-child(1) .feature-icon { animation-delay: 0s; }
+        .feature-card:nth-child(2) .feature-icon { animation-delay: 0.2s; }
+        .feature-card:nth-child(3) .feature-icon { animation-delay: 0.4s; }
+        .feature-card:nth-child(4) .feature-icon { animation-delay: 0.6s; }
+        .feature-card:nth-child(5) .feature-icon { animation-delay: 0.8s; }
+        .feature-card:nth-child(6) .feature-icon { animation-delay: 1s; }
+
+        .feature-card h3 {
+            font-size: 26px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            color: #999999;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .code-demo {
+            padding: 120px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .code-demo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: radial-gradient(ellipse at top, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .code-demo h2 {
+            text-align: center;
+            font-size: 56px;
+            margin-bottom: 70px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .code-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .code-block {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s;
+            backdrop-filter: blur(10px);
+        }
+
+        .code-block:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .code-header {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 18px 25px;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .code-header::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+        }
+
+        .code-content {
+            padding: 30px;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .stats {
+            padding: 120px 20px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 50px;
+        }
+
+        .stat-item {
+            position: relative;
+            padding: 40px 20px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.4s;
+        }
+
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .stat-item h3 {
+            font-size: 64px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #ffffff 0%, #666666 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+        }
+
+        .stat-item p {
+            color: #888888;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .cta-section {
+            padding: 100px 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .cta-section h2 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+
+        .cta-section p {
+            color: #888888;
+            font-size: 20px;
+            margin-bottom: 40px;
+        }
+
+        .footer {
+            padding: 80px 20px 40px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #888888;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .footer-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: #ffffff;
+            transition: width 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: #ffffff;
+        }
+
+        .footer-links a:hover::after {
+            width: 100%;
+        }
+
+        .copyright {
+            color: #666666;
+            font-size: 14px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 15px 25px;
+                width: 90%;
+            }
+
+            .nav-links {
+                gap: 20px;
+            }
+
+            .nav-links a {
+                font-size: 14px;
+            }
+
+            .hero {
+                padding: 160px 20px 80px;
+            }
+
+            .hero h1 {
+                font-size: 48px;
+            }
+
+            .hero p {
+                font-size: 18px;
+            }
+
+            .code-container {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .features h2, .code-demo h2 {
+                font-size: 40px;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-background"></div>
+    
+    <div class="content">
+        <nav>
+            <div class="logo">DecompilerX</div>
+          <br>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#demo">Demo</a></li>
+                <li><a href="#docs">Docs</a></li>
+                <li><a href="#github">GitHub</a></li>
+            </ul>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-badge">✨ v1.0.0 Now Available</div>
+            <h1>Professional x86-64<br>Decompilation</h1>
+            <p>Transform binary executables into readable, high-level code with intelligent function detection and comprehensive instruction support.</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/slyemane/DecompilerX/releases/download/v1.0.0/release.zip" class="btn btn-primary"><span>Download v1.0.0</span></a>
+                <a href="https://github.com/slyemane/DecompilerX/" class="btn btn-secondary"><span>View on GitHub</span></a>
+            </div>
+        </section>
+
+        <section class="features" id="features">
+            <div class="section-header">
+                <div class="section-label">Why Choose DecompilerX</div>
+                <h2>Powerful Features</h2>
+            </div>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Multi-Format Support</h3>
+                    <p>Parse PE (Windows) and ELF (Linux) executables with automatic format detection and comprehensive section analysis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Intelligent Detection</h3>
+                    <p>Automatically identifies function prologs, skips jump tables, and locates real executable code with precision.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔧</div>
+                    <h3>x86-64 Complete</h3>
+                    <p>Comprehensive instruction set support including REX prefixes, RIP-relative addressing, and advanced operations.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>Dual Output</h3>
+                    <p>Generate clean, readable code in either C++ or C# with proper syntax, formatting, and variable management.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Production Ready</h3>
+                    <p>Built with comprehensive error handling, validation, and clean architecture for real-world professional usage.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Clean Architecture</h3>
+                    <p>Modular design with clear separation between parsing, disassembly, and code generation for maintainability.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="code-demo" id="demo">
+            <div class="section-header">
+                <div class="section-label">Live Example</div>
+                <h2>See It In Action</h2>
+            </div>
+            <div class="code-container">
+                <div class="code-block">
+                    <div class="code-header">Assembly Input</div>
+                    <div class="code-content">0x00001910: sub rsp, 40<br>0x00001914: lea rcx, [rip+0x39d5]<br>0x0000191b: call 0x7bc<br>0x00001920: nop<br>0x00001921: add rsp, 40<br>0x00001925: ret</div>
+                </div>
+                <div class="code-block">
+                    <div class="code-header">Decompiled C++</div>
+                    <div class="code-content">void decompiled_function() {<br>&nbsp;&nbsp;int rsp = 0;<br>&nbsp;&nbsp;int rcx = 0;<br><br>&nbsp;&nbsp;rsp -= 40;<br>&nbsp;&nbsp;rcx = &(rip + 0x39d5);<br>&nbsp;&nbsp;call_0x7bc();<br>&nbsp;&nbsp;rsp += 40;<br>&nbsp;&nbsp;return;<br>}</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>60+</h3>
+                    <p>Supported Instructions</p>
+                </div>
+                <div class="stat-item">
+                    <h3>2</h3>
+                    <p>Executable Formats</p>
+                </div>
+                <div class="stat-item">
+                    <h3>2</h3>
+                    <p>Output Languages</p>
+                </div>
+                <div class="stat-item">
+                    <h3>100%</h3>
+                    <p>Open Source</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta-section">
+            <h2>Ready to Get Started?</h2>
+            <p>Download DecompilerX today and start decompiling with confidence.</p>
+            <a href="https://github.com/slyemane/DecompilerX/releases/download/v1.0.0/release.zip" class="btn btn-primary"><span>Download Now</span></a>
+        </section>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="copyright">
+                    Developed by @slyemane | Copyright © 2025 - All Rights Reserved
+                </p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
